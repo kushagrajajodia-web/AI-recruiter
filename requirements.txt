@@ -1,0 +1,8 @@
+groq
+python-dotenv
+SpeechRecognition
+pyaudio
+pyttsx3
+pywin32
+duckduckgo-search
+
