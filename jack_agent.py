@@ -229,19 +229,50 @@ If there are any discrepancies between the conversation and CV, note them in the
             
         print(f"✅ Candidate profile saved to {filename}")
         
+        # Extract structured data for DB
+        try:
+            import json
+            extract_prompt = f"""From the candidate profile below, extract:
+            1. A list of top 5-10 technical skills
+            2. Key preferences (remote work, salary expectations, location)
+
+            PROFILE:
+            {content}
+
+            Respond strictly in valid JSON format:
+            {{
+                "skills": ["skill1", "skill2"],
+                "preferences": {{ "remote": "yes/no/hybrid", "salary": "...", "location": "..." }}
+            }}
+            """
+            extract_messages = [
+                {"role": "system", "content": "You are a data extractor. Output valid JSON only."},
+                {"role": "user", "content": extract_prompt}
+            ]
+            extract_response = groq_call(extract_messages, model="llama-3.3-70b-versatile", temperature=0.1)
+            
+            # Simple cleanup for JSON
+            json_str = extract_response.replace('```json', '').replace('```', '').strip()
+            data = json.loads(json_str)
+            
+            db_skills = data.get('skills', [])
+            db_prefs = data.get('preferences', {})
+        except Exception as e:
+            print(f"⚠️ Error extracting structured data: {e}")
+            db_skills = []
+            db_prefs = {}
+
         # Persist to Database
         try:
             from database import add_candidate
             # Extract name from filename or use safe_name
             db_name = safe_name.replace("_", " ").title()
             
-            # Extract basic skills/prefs (simplified for now, ideally parsed from content)
-            # For now we'll pass the whole content as the profile source
             add_candidate(
                 name=db_name,
                 profile_file=filename,
-                skills=[],  # TODO: extract skills from profile
-                preferences={}  # TODO: extract prefs from profile
+                skills=db_skills,
+                preferences=db_prefs
             )
             print(f"✅ Candidate added to database: {db_name}")
         except Exception as db_e:
@@ -401,7 +432,7 @@ def main():
         messages = [{"role": "system", "content": system_prompt}]
         
         # Build better intro message
-        intro_text = "Hey! I'm Jack, your Talent Advocate. I'm here to help you land your next amazing role. Let's talk about your experience and what you're looking for. Tell me - what kind of work have you been doing lately?"
+        intro_text = "Hey! I'm Jack, your Talent Advocate. I'm here to help you land your next amazing role. To start your unique profile, could you please tell me your full name?"
         
         if job_requirements:
             intro_text = "Hey! I'm Jack. I'm currently helping fill a specific role, and I'd love to chat with you about it. But first, tell me about yourself - what's your background?"

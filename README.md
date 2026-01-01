@@ -80,18 +80,6 @@ python jack_jill_negotiation.py
 
 ---
 
-### **STEP 3: Verification**
-Check what's in your database:
-
-```bash
-python verify_persistence.py
-```
-- **What it does:** Shows all candidates, jobs, and matches in the database
-- **Output:** Summary printed to console
-- **When to run:** To verify data was saved correctly
-
----
-
 ## 📂 Core Files
 
 | File | Purpose |
@@ -119,23 +107,3 @@ AI Recruiter/
 └── [scripts listed above]
 ```
 
----
-
-## 💡 Quick Start Example
-
-```bash
-# 1. Interview a candidate
-python jack_agent.py
-# Talk about your background, say "goodbye" when done
-
-# 2. Interview a hiring manager
-python jill_agent.py
-# Describe the role, say "goodbye" when done
-
-# 3. Run the matching
-python jack_jill_negotiation.py
-# Watch Jack and Jill negotiate to match candidates with jobs
-
-# 4. Check matches
-python verify_persistence.py
-```

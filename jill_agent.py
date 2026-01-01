@@ -184,6 +184,39 @@ If there are any discrepancies between the conversation and the job description,
             
         print(f"✅ Job requirements saved to {filename}")
         
+        # Extract structured data for DB
+        try:
+            import json
+            extract_prompt = f"""From the job specification below, extract:
+            1. The Company Name
+            2. A list of top 5-10 key requirements/skills
+
+            JOB SPEC:
+            {content}
+
+            Respond strictly in valid JSON format:
+            {{
+                "company": "Company Name",
+                "requirements": ["req1", "req2"]
+            }}
+            """
+            extract_messages = [
+                {"role": "system", "content": "You are a data extractor. Output valid JSON only."},
+                {"role": "user", "content": extract_prompt}
+            ]
+            extract_response = groq_call(extract_messages, model="llama-3.3-70b-versatile", temperature=0.1)
+            
+            # Simple cleanup for JSON
+            json_str = extract_response.replace('```json', '').replace('```', '').strip()
+            data = json.loads(json_str)
+            
+            db_company = data.get('company', 'Unknown')
+            db_reqs = data.get('requirements', [])
+        except Exception as e:
+            print(f"⚠️ Error extracting structured data: {e}")
+            db_company = "Unknown"
+            db_reqs = []
+
         # Persist to Database
         try:
             from database import add_job
@@ -192,9 +225,9 @@ If there are any discrepancies between the conversation and the job description,
             
             add_job(
                 title=db_title,
-                company="Unknown", # TODO: Parse from content
+                company=db_company,
                 spec_file=filename,
-                requirements=[] # TODO: extract requirements
+                requirements=db_reqs
             )
             print(f"✅ Job added to database: {db_title}")
         except Exception as db_e:
@@ -382,7 +415,7 @@ def main():
             intro_text = groq_call(messages, model_name)
             messages.append({"role": "assistant", "content": intro_text})
         else:
-            intro_text = "Hello! I'm Jill, your Talent Acquisition Partner. It's a pleasure to meet you. How can I help you build your team today? What role are we looking to fill?"
+            intro_text = "Hello! I'm Jill, your Talent Acquisition Partner. To create a precise job entry, could you please start by telling me the Company Name and the specific Job Title you are hiring for?"
 
         print(f"Jill (Talent Acquisition) [{model_name}]: {intro_text}")
         speak(intro_text)

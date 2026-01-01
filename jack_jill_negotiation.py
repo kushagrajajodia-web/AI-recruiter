@@ -72,6 +72,15 @@ def main():
         job_title = job['title']
         job_reqs = job['requirements']
         
+        # Load full job spec from file
+        job_full_content = job_reqs
+        if job['spec_file'] and os.path.exists(job['spec_file']):
+            try:
+                with open(job['spec_file'], 'r', encoding='utf-8') as f:
+                    job_full_content = f.read()
+            except Exception as e:
+                print(f"Error reading job spec {job['spec_file']}: {e}")
+        
         log_to_transcript("SYSTEM", f"Opening discussion for Job: **{job_title}**")
         
         # 1. Jill Pitches the Role (New Step)
@@ -81,7 +90,7 @@ def main():
         
         JOB DETAILS:
         Title: {job_title}
-        Requirements: {job_reqs}
+        Requirements: {job_full_content[:2000]}...
         
         Write a short, professional opening statement to Jack. 
         Pitch the role and the company briefly. Explain what you are looking for and why it's urgent.
@@ -101,6 +110,16 @@ def main():
             scored_candidates = []
             for candidate in candidates:
                 cand_skills = json.loads(candidate['skills']) if candidate['skills'] else []
+                
+                # Load full candidate profile
+                candidate_content = "Profile content unavailable."
+                if candidate['profile_file'] and os.path.exists(candidate['profile_file']):
+                    try:
+                        with open(candidate['profile_file'], 'r', encoding='utf-8') as f:
+                            candidate_content = f.read()
+                    except Exception as e:
+                        print(f"Error reading profile {candidate['profile_file']}: {e}")
+                
                 # Simple keyword heuristic for sorting (LLM will do real eval)
                 scored_candidates.append(candidate)
 
@@ -112,7 +131,9 @@ def main():
                 CANDIDATE PROFILE:
                 Name: {candidate['name']}
                 Skills: {candidate.get('skills', 'No specific skills listed')}
-                Profile Summary: {candidate.get('headline', 'No headline')}
+                
+                FULL PROFILE:
+                {candidate_content[:2000]}... (truncated for brevity)
                 
                 Step 1: Assign a score from 0-10 based on POTENTIAL and ADAPTABILITY.
                 - 10 = Perfect fit or high potential.
@@ -148,7 +169,7 @@ def main():
                     Jack's Pitch: "{jack_pitch_text}"
                     Jack's Score: {jack_score}/10
                     
-                    Real Job Requirements: {job_reqs}
+                    Real Job Requirements: {job_full_content[:2000]}...
                     
                     Step 1: Assign your own INDEPENDENT score (0-10) based on requirements fit.
                     - Be critical but fair.
